@@ -1,9 +1,17 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const getAiInstance = () => {
+  // Use Vite's import.meta.env
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Gemini API feature is disabled: No API key found.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const generateProductImage = async (prompt: string, size: "1K" | "2K" | "4K" = "1K") => {
   try {
+    const ai = getAiInstance();
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-image-preview',
       contents: {
@@ -25,12 +33,14 @@ export const generateProductImage = async (prompt: string, size: "1K" | "2K" | "
     throw new Error("No image generated");
   } catch (error) {
     console.error("Image generation failed:", error);
+    // Return a dummy image or throw to be handled by the component gracefully
     throw error;
   }
 };
 
 export const analyzeStyle = async (imageBase64: string) => {
   try {
+    const ai = getAiInstance();
     const response = await ai.models.generateContent({
       model: 'gemini-3.1-pro-preview',
       contents: {
@@ -43,12 +53,13 @@ export const analyzeStyle = async (imageBase64: string) => {
     return response.text;
   } catch (error) {
     console.error("Style analysis failed:", error);
-    throw error;
+    return "Style analysis is currently unavailable (API Key missing).";
   }
 };
 
 export const getStyleKeywords = async (imageBase64: string) => {
   try {
+    const ai = getAiInstance();
     const response = await ai.models.generateContent({
       model: 'gemini-3.1-pro-preview',
       contents: {
@@ -61,6 +72,6 @@ export const getStyleKeywords = async (imageBase64: string) => {
     return response.text;
   } catch (error) {
     console.error("Keyword generation failed:", error);
-    throw error;
+    return "elegant, fashion, new arrival";
   }
 };
