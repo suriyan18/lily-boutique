@@ -488,7 +488,7 @@ export default function Checkout() {
                 {cart.map(item => (
                   <div key={`${item.id}-${item.size}-${item.color}`} className="flex items-center space-x-4 mb-4">
                     <div className="w-16 h-20 rounded-lg overflow-hidden shrink-0">
-                      <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                      <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm text-gray-900 truncate">{item.name}</p>

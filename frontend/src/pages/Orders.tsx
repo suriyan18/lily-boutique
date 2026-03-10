@@ -110,7 +110,7 @@ export default function Orders() {
                     <div className="lg:col-span-2 space-y-4">
                       {order.items?.map((item: any, i: number) => (
                         <div key={i} className="flex items-center space-x-4 p-3 hover:bg-brand-50/50 rounded-2xl transition-all">
-                          <img src={item.imageUrl || item.image_url} alt={item.name} className="w-16 h-20 object-cover rounded-xl shadow-sm" />
+                          <img src={item.imageUrl || item.image_url} alt={item.name} className="w-16 h-20 object-cover rounded-xl shadow-sm" referrerPolicy="no-referrer" />
                           <div className="flex-1">
                             <h4 className="font-bold text-gray-900">{item.name}</h4>
                             <p className="text-xs text-gray-500">{item.size} / {item.color}</p>

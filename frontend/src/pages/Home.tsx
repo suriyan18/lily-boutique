@@ -196,6 +196,7 @@ export default function Home() {
                   src={col.image} 
                   alt={col.name} 
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
                   <h3 className="text-white font-display text-3xl font-bold mb-2">{col.name}</h3>
@@ -253,6 +254,7 @@ export default function Home() {
                   src={col.image} 
                   alt={col.name} 
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent flex flex-col justify-end p-6">
                   <h3 className="text-white font-display text-2xl font-bold mb-1">{col.name}</h3>
@@ -435,7 +437,7 @@ export default function Home() {
 
               <div className="flex space-x-6 mb-8">
                 <div className="w-24 h-32 rounded-xl overflow-hidden shrink-0">
-                  <img src={quickAddProduct.image_url} alt={quickAddProduct.name} className="w-full h-full object-cover" />
+                  <img src={quickAddProduct.image_url} alt={quickAddProduct.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 </div>
                 <div>
                   <h3 className="font-display text-2xl font-bold text-gray-900 mb-2">{quickAddProduct.name}</h3>

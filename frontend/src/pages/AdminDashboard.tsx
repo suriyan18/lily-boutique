@@ -169,7 +169,7 @@ export default function AdminDashboard() {
               {products.map((p: any) => (
                 <div key={p.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group">
                   <div className="aspect-square relative">
-                    <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                    <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-4">
                       <button className="p-3 bg-white rounded-full text-gray-900 hover:bg-brand-600 hover:text-white transition-all"><Edit2 size={20} /></button>
                       <button className="p-3 bg-white rounded-full text-red-600 hover:bg-red-600 hover:text-white transition-all"><Trash2 size={20} /></button>
@@ -282,7 +282,7 @@ export default function AdminDashboard() {
                       </div>
                       {newProduct.image_url && (
                         <div className="aspect-square rounded-2xl overflow-hidden border border-gray-200">
-                          <img src={newProduct.image_url} alt="Preview" className="w-full h-full object-cover" />
+                          <img src={newProduct.image_url} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         </div>
                       )}
                     </div>
