@@ -2,7 +2,7 @@
 import dns from "dns";
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 // cSpell:ignore pincode
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import mongoose from "mongoose";
@@ -71,7 +71,7 @@ const app = express();
 app.use(cors()); // Allow all origins for now; Render/Vercel handles specific security
 app.use(express.json());
 
-const authenticate = (req: any, res: any, next: any) => {
+const authenticate = (req: any, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
@@ -82,7 +82,7 @@ const authenticate = (req: any, res: any, next: any) => {
   }
 };
 
-const isAdmin = (req: any, res: any, next: any) => {
+const isAdmin = (req: any, res: Response, next: NextFunction) => {
   if (req.user?.role !== "admin") return res.status(403).json({ error: "Forbidden" });
   next();
 };
@@ -118,7 +118,7 @@ function initLocalDb() {
 
 // ─── API Routes ─────────────────────────────────────────────────────────────
 
-app.post("/api/auth/register", async (req, res) => {
+app.post("/api/auth/register", async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
   try {
     const hashedPassword = bcrypt.hashSync(password, 10);
@@ -135,7 +135,7 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
-app.post("/api/auth/login", async (req, res) => {
+app.post("/api/auth/login", async (req: Request, res: Response) => {
   const { email, password } = req.body;
   if (useLocalDb) {
     const user = localDb.prepare("SELECT * FROM users WHERE email = ?").get(email) as any;
@@ -150,7 +150,7 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 // ─── Address Management ─────────────────────────────────────────────────────
-app.get("/api/addresses", authenticate, async (req, res) => {
+app.get("/api/addresses", authenticate, async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   if (useLocalDb) {
     const data = localDb.prepare("SELECT * FROM addresses WHERE user_id = ?").all(userId);
@@ -160,7 +160,7 @@ app.get("/api/addresses", authenticate, async (req, res) => {
   res.json(data);
 });
 
-app.post("/api/addresses", authenticate, async (req, res) => {
+app.post("/api/addresses", authenticate, async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const { fullName, phone, addressLine, city, state, pincode, landmark, isDefault } = req.body;
   
@@ -177,7 +177,7 @@ app.post("/api/addresses", authenticate, async (req, res) => {
 });
 
 // ─── Persistent Cart Management ─────────────────────────────────────────────
-app.get("/api/cart", authenticate, async (req, res) => {
+app.get("/api/cart", authenticate, async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   if (useLocalDb) {
     const cart = localDb.prepare("SELECT id FROM carts WHERE user_id = ?").get(userId) as any;
@@ -189,7 +189,7 @@ app.get("/api/cart", authenticate, async (req, res) => {
   res.json(cart || { items: [] });
 });
 
-app.post("/api/cart/sync", authenticate, async (req, res) => {
+app.post("/api/cart/sync", authenticate, async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const { items } = req.body; // Array of cart items
 
@@ -215,7 +215,7 @@ app.post("/api/cart/sync", authenticate, async (req, res) => {
 });
 
 // ─── OTP Verification ────────────────────────────────────────────────────────
-app.post("/api/auth/send-otp", (req, res) => {
+app.post("/api/auth/send-otp", (req: Request, res: Response) => {
   console.log("POST /api/auth/send-otp", req.body);
   const { phone } = req.body;
   if (!phone) {
@@ -229,7 +229,7 @@ app.post("/api/auth/send-otp", (req, res) => {
   res.json({ success: true, message: "OTP sent successfully" });
 });
 
-app.post("/api/auth/verify-otp", (req, res) => {
+app.post("/api/auth/verify-otp", (req: Request, res: Response) => {
   console.log("POST /api/auth/verify-otp", req.body);
   const { phone, otp } = req.body;
   const storedOtp = otpStore.get(phone);
@@ -242,7 +242,7 @@ app.post("/api/auth/verify-otp", (req, res) => {
   }
 });
 
-app.get("/api/products", async (_req, res) => {
+app.get("/api/products", async (_req: Request, res: Response) => {
   if (useLocalDb) {
     const products = localDb.prepare("SELECT * FROM products").all();
     return res.json(products);
@@ -251,7 +251,7 @@ app.get("/api/products", async (_req, res) => {
   res.json(products.map((p: any) => ({ ...p, id: p._id, image_url: p.imageUrl, category_name: p.categoryName })));
 });
 
-app.get("/api/products/:id", async (req, res) => {
+app.get("/api/products/:id", async (req: Request, res: Response) => {
   if (useLocalDb) {
     const product = localDb.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id);
     return res.json(product);
@@ -260,14 +260,14 @@ app.get("/api/products/:id", async (req, res) => {
   res.json({ ...product, id: product._id, image_url: product.imageUrl, category_name: product.categoryName });
 });
 
-app.get("/api/categories", async (_req, res) => {
+app.get("/api/categories", async (_req: Request, res: Response) => {
   if (useLocalDb) return res.json(localDb.prepare("SELECT * FROM categories").all());
   const categories = await Category.find().lean();
   res.json(categories.map((c: any) => ({ ...c, id: c._id })));
 });
 
 // ─── Reviews ─────────────────────────────────────────────────────────────────
-app.get("/api/products/:id/reviews", async (req, res) => {
+app.get("/api/products/:id/reviews", async (req: Request, res: Response) => {
   if (useLocalDb) {
     const reviews = localDb.prepare("SELECT * FROM reviews WHERE product_id = ?").all(req.params.id);
     return res.json(reviews);
@@ -276,7 +276,7 @@ app.get("/api/products/:id/reviews", async (req, res) => {
   res.json(reviews.map((r: any) => ({ ...r, id: r._id, user_name: r.userName })));
 });
 
-app.post("/api/products/:id/reviews", authenticate, async (req, res) => {
+app.post("/api/products/:id/reviews", authenticate, async (req: Request, res: Response) => {
   const { rating, comment } = req.body;
   const userId = (req as any).user.id;
   if (useLocalDb) {
@@ -290,7 +290,7 @@ app.post("/api/products/:id/reviews", authenticate, async (req, res) => {
 });
 
 // ─── Admin Products ───────────────────────────────────────────────────────────
-app.post("/api/admin/products", authenticate, isAdmin, async (req, res) => {
+app.post("/api/admin/products", authenticate, isAdmin, async (req: Request, res: Response) => {
   const { name, description, price, category_id, image_url, stock, is_featured } = req.body;
   if (useLocalDb) {
     const cat = localDb.prepare("SELECT name FROM categories WHERE id = ?").get(category_id) as any;
@@ -304,7 +304,7 @@ app.post("/api/admin/products", authenticate, isAdmin, async (req, res) => {
 });
 
 // ─── Checkout / Orders ────────────────────────────────────────────────────────
-app.post("/api/checkout", authenticate, async (req, res) => {
+app.post("/api/checkout", authenticate, async (req: Request, res: Response) => {
   const { items, address, payment_method, phone, fullName, addressId } = req.body;
   const userId = (req as any).user.id;
   const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -372,7 +372,7 @@ app.post("/api/checkout", authenticate, async (req, res) => {
   }
 });
 
-app.get("/api/orders", authenticate, async (req, res) => {
+app.get("/api/orders", authenticate, async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const role = (req as any).user.role;
   if (useLocalDb) {
@@ -424,7 +424,7 @@ async function startServer() {
 
   if (process.env.NODE_ENV === "production") {
     app.use(express.static(path.join(__dirname, "../frontend/dist")));
-    app.get("*", (_req, res) => res.sendFile(path.join(__dirname, "../frontend/dist", "index.html")));
+    app.get("*", (_req: Request, res: Response) => res.sendFile(path.join(__dirname, "../frontend/dist", "index.html")));
   }
 
   const PORT = parseInt(process.env.PORT || '5000', 10);
