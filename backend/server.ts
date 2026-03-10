@@ -422,10 +422,7 @@ async function startServer() {
     initLocalDb();
   }
 
-  if (process.env.NODE_ENV === "production") {
-    app.use(express.static(path.join(__dirname, "../frontend/dist")));
-    app.get("*", (_req: Request, res: Response) => res.sendFile(path.join(__dirname, "../frontend/dist", "index.html")));
-  }
+  // API Only Backend - Frontend is hosted purely on Vercel
 
   const PORT = parseInt(process.env.PORT || '5000', 10);
   app.listen(PORT, "0.0.0.0", () => {
