@@ -115,7 +115,7 @@ export default function Orders() {
           <div className="space-y-6">
             {orders.map((order, idx) => {
               const rStatus = order.return_status || order.returnStatus;
-              const canReturn = order.status === 'delivered' && (!rStatus || rStatus === 'none');
+              const canReturn = order.status?.toLowerCase() === 'delivered' && (!rStatus || rStatus === 'none');
               
               return (
               <motion.div 

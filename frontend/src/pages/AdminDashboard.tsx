@@ -10,6 +10,7 @@ export default function AdminDashboard() {
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState('analytics');
   const [products, setProducts] = useState([]);
+  const [allOrders, setAllOrders] = useState([]);
   const [analytics, setAnalytics] = useState<any>(null);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [newProduct, setNewProduct] = useState({
@@ -17,7 +18,7 @@ export default function AdminDashboard() {
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [genPrompt, setGenPrompt] = useState('');
-  const [loading, setLoading] = useState(true); // Added loading state
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchData();
@@ -25,16 +26,32 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      const [productsData, analyticsData] = await Promise.all([
+      const [productsData, analyticsData, ordersData] = await Promise.all([
         apiFetch('/api/products'),
-        apiFetch('/api/admin/analytics')
+        apiFetch('/api/admin/analytics'),
+        apiFetch('/api/orders')
       ]);
       setProducts(productsData);
       setAnalytics(analyticsData);
+      setAllOrders(ordersData);
     } catch (err) {
       toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOrderStatus = async (orderId: string, status: string) => {
+    try {
+      await apiFetch(`/api/admin/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      toast.success(`Order status updated to ${status}!`);
+      fetchData(); // Refresh to reflect changes
+    } catch (err: any) {
+      toast.error(err.message || `Failed to update order status`);
     }
   };
 
@@ -171,6 +188,64 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Orders Management Tab */}
+        {activeTab === 'orders' && (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center">
+              <h1 className="text-3xl font-bold text-gray-900">All Orders</h1>
+              <span className="bg-brand-100 text-brand-800 text-sm font-bold px-4 py-2 rounded-xl">
+                {allOrders.length} Total Orders
+              </span>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                  <tr>
+                    <th className="px-6 py-4">Order ID</th>
+                    <th className="px-6 py-4">Customer</th>
+                    <th className="px-6 py-4">Amount</th>
+                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {allOrders.map((order: any) => (
+                    <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 font-mono text-sm">#{order.id?.toString().slice(-8).toUpperCase()}</td>
+                      <td className="px-6 py-4">{order.user_name}</td>
+                      <td className="px-6 py-4 font-bold">₹{order.total_amount || order.totalAmount}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{new Date(order.created_at || order.createdAt).toLocaleDateString()}</td>
+                      <td className="px-6 py-4">
+                        <select 
+                          value={order.status}
+                          onChange={(e) => handleOrderStatus(order.id, e.target.value)}
+                          className={`text-sm font-bold px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+                            order.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                            order.status === 'shipped' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                            order.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
+                            'bg-yellow-50 text-yellow-700 border-yellow-200'
+                          }`}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="confirmed">Confirmed</option>
+                          <option value="shipped">Shipped</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {allOrders.length === 0 && (
+                <div className="p-12 text-center text-gray-500">
+                  No orders found.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         {/* Returns Tab */}
         {activeTab === 'returns' && analytics && (
           <div className="space-y-8">

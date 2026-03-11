@@ -446,6 +446,28 @@ app.post("/api/orders/:id/return", authenticate, async (req: Request, res: Respo
   }
 });
 
+app.put("/api/admin/orders/:id/status", authenticate, isAdmin, async (req: Request, res: Response) => {
+  const orderId = req.params.id;
+  const { status } = req.body; // 'confirmed', 'shipped', 'delivered', 'cancelled'
+  
+  try {
+    if (useLocalDb) {
+      localDb.prepare("UPDATE orders SET status = ? WHERE id = ?").run(status, orderId);
+      return res.json({ success: true, status });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    order.status = status;
+    await order.save();
+    
+    res.json({ success: true, status });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.put("/api/admin/orders/:id/return-status", authenticate, isAdmin, async (req: Request, res: Response) => {
   const orderId = req.params.id;
   const { status } = req.body; // 'approved' or 'rejected'
