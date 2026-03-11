@@ -10,6 +10,7 @@ import ProductDetails from './pages/ProductDetails';
 import Cart from './pages/Cart';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminLogin from './pages/AdminLogin';
 import { motion, AnimatePresence } from 'motion/react';
 import { MapPin, Phone, Mail } from 'lucide-react';
 
@@ -22,7 +23,10 @@ import { Navigate } from 'react-router-dom';
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  if (!user || user.role !== 'admin') {
+  if (!user) {
+    return <Navigate to="/admin-login" replace />;
+  }
+  if (user.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
   return <>{children}</>;
@@ -40,6 +44,7 @@ function AppContent() {
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/style-finder" element={<StyleFinder />} />
             <Route path="/checkout" element={<Checkout />} />
