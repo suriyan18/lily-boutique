@@ -21,18 +21,18 @@ export default function Header() {
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
-            <Link to="/" className="shrink-0 flex items-center gap-3 group">
-                <img src="/logo.png" alt="Lily Boutique" className="h-16 w-auto sm:h-20 object-contain" style={{ filter: 'brightness(0) saturate(100%) invert(28%) sepia(80%) saturate(2500%) hue-rotate(248deg) brightness(95%)' }} />
+            <Link to="/" className="shrink-0 flex items-center gap-1 sm:gap-3 group">
+                <img src="/logo.png" alt="Lily Boutique" className="h-10 sm:h-16 lg:h-20 w-auto object-contain" style={{ filter: 'brightness(0) saturate(100%) invert(28%) sepia(80%) saturate(2500%) hue-rotate(248deg) brightness(95%)' }} />
                 <div className="flex flex-col items-start">
                   <div className="flex items-baseline gap-1 leading-none">
                     <span
-                      className="font-logo text-4xl leading-none"
+                      className="font-logo text-3xl sm:text-4xl leading-none"
                       style={{ background: 'linear-gradient(135deg, #7C3AED, #a855f7, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                     >Lily</span>
-                    <span className="font-display text-lg font-extrabold text-gray-800 tracking-widest uppercase">boutique</span>
+                    <span className="font-display text-xs sm:text-lg font-extrabold text-gray-800 tracking-widest uppercase">boutique</span>
                   </div>
                   <span
-                    className="font-logo text-[13px] tracking-wide mt-0.5 transition-all duration-300 group-hover:tracking-widest"
+                    className="hidden sm:block font-logo text-[13px] tracking-wide mt-0.5 transition-all duration-300 group-hover:tracking-widest"
                     style={{ background: 'linear-gradient(90deg, #a855f7, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                   >✦ Style With Smile...</span>
                 </div>

@@ -49,12 +49,12 @@ export default function Home() {
             transition={{ duration: 0.8 }}
             className="max-w-xl"
           >
-            <h1 className="font-display text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
               Elegance in <br />
               <span className="text-brand-200">Every Stitch</span>
             </h1>
-            <p className="font-logo text-2xl text-brand-200 mb-4">Style With Smile...</p>
-            <p className="text-lg text-white/90 mb-8 font-body">
+            <p className="font-logo text-xl sm:text-2xl text-brand-200 mb-4">Style With Smile...</p>
+            <p className="text-base sm:text-lg text-white/90 mb-8 font-body">
               Discover our curated collection of contemporary women's fashion. Designed for the modern woman who values style and comfort.
             </p>
             <Link 

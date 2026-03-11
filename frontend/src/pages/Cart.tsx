@@ -73,7 +73,7 @@ export default function Cart() {
                     </button>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-center sm:text-right w-full sm:w-auto mt-4 sm:mt-0">
                   <p className="text-xl font-bold text-gray-900">₹{item.price * item.quantity}</p>
                   <p className="text-xs text-gray-400">₹{item.price} each</p>
                 </div>
