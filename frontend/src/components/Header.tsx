@@ -8,7 +8,18 @@ export default function Header() {
   const { user, logout } = useAuth();
   const { cart } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
+      setIsSearchOpen(false);
+      setSearchQuery('');
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-brand-100">
@@ -47,8 +58,11 @@ export default function Header() {
             </Link>
           </nav>
 
-          <div className="flex items-center space-x-4">
-            <button className="p-2 text-gray-600 hover:text-brand-600 transition-colors">
+          <div className="flex items-center space-x-4 relative">
+            <button 
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
+            >
               <Search size={20} />
             </button>
             <Link to="/wishlist" className="p-2 text-gray-600 hover:text-brand-600 transition-colors">
@@ -85,6 +99,26 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {/* Global Search Bar Dropdown */}
+      {isSearchOpen && (
+        <div className="absolute top-full left-0 w-full bg-white border-b border-brand-100 py-4 px-4 shadow-lg flex justify-center z-50">
+          <form 
+            onSubmit={handleSearchSubmit}
+            className="w-full max-w-2xl relative"
+          >
+            <input 
+              type="text"
+              autoFocus
+              placeholder="Search products, categories, or collections..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all"
+            />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          </form>
+        </div>
+      )}
 
       {/* Mobile Menu */}
       {isMenuOpen && (

@@ -40,7 +40,7 @@ export default function Cart() {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white p-6 rounded-2xl shadow-sm border border-brand-50 flex flex-col sm:flex-row items-center gap-6"
               >
-                <div className="w-24 h-32 rounded-xl overflow-hidden flex-shrink-0">
+                <div className="w-24 h-32 rounded-xl overflow-hidden shrink-0">
                   <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 </div>
                 <div className="flex-1 text-center sm:text-left">

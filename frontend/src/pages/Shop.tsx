@@ -11,9 +11,9 @@ export default function Shop() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
   const [isAiSearch, setIsAiSearch] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('q') || '');
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
@@ -37,6 +37,11 @@ export default function Shop() {
     const cat = searchParams.get('category');
     if (cat) {
       setSelectedCategory(cat);
+    }
+    const q = searchParams.get('q');
+    if (q !== null) {
+      setSearch(q);
+      setIsAiSearch(false);
     }
   }, [searchParams]);
 
