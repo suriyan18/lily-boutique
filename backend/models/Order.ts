@@ -23,6 +23,8 @@ const OrderSchema = new mongoose.Schema({
   paymentMethod: String,
   status: { type: String, default: 'pending' }, // pending, confirmed, shipped, delivered, cancelled
   paymentStatus: { type: String, default: 'pending' }, // pending, successful, failed
+  returnStatus: { type: String, default: 'none' }, // none, requested, approved, rejected
+  returnReason: { type: String, default: null },
   trackingId: String,
   razorpayOrderId: String,
   items: [OrderItemSchema],

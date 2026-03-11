@@ -71,6 +71,20 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleReturnStatus = async (orderId: string, status: 'approved' | 'rejected') => {
+    try {
+      await apiFetch(`/api/admin/orders/${orderId}/return-status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      toast.success(`Return request ${status}!`);
+      fetchData(); // Refresh analytics to reflect changes
+    } catch (err: any) {
+      toast.error(err.message || `Failed to update return status`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -83,6 +97,7 @@ export default function AdminDashboard() {
             { id: 'analytics', icon: BarChart3, label: 'Analytics' },
             { id: 'products', icon: Package, label: 'Products' },
             { id: 'orders', icon: ShoppingCart, label: 'Orders' },
+            { id: 'returns', icon: ArrowDownRight, label: 'Returns' },
             { id: 'users', icon: Users, label: 'Users' },
             { id: 'coupons', icon: Tag, label: 'Coupons' },
           ].map(item => (
@@ -103,7 +118,7 @@ export default function AdminDashboard() {
         {activeTab === 'analytics' && analytics && (
           <div className="space-y-8">
             <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <p className="text-sm text-gray-500 mb-1">Total Sales</p>
                 <p className="text-3xl font-bold text-gray-900">₹{analytics.totalSales}</p>
@@ -116,10 +131,14 @@ export default function AdminDashboard() {
                 <p className="text-sm text-gray-500 mb-1">Total Customers</p>
                 <p className="text-3xl font-bold text-gray-900">{analytics.userCount}</p>
               </div>
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-brand-100">
+                <p className="text-sm text-brand-600 font-bold mb-1">Pending Returns</p>
+                <p className="text-3xl font-bold text-brand-700">{analytics.returnRequests?.length || 0}</p>
+              </div>
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-6 border-b border-gray-100">
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 className="font-bold text-gray-900">Recent Orders</h3>
               </div>
               <table className="w-full text-left">
@@ -135,7 +154,7 @@ export default function AdminDashboard() {
                 <tbody className="divide-y divide-gray-100">
                   {analytics.recentOrders.map((order: any) => (
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 font-mono text-sm">#{order.id}</td>
+                      <td className="px-6 py-4 font-mono text-sm">#{order.id?.toString().slice(-8).toUpperCase()}</td>
                       <td className="px-6 py-4">{order.user_name}</td>
                       <td className="px-6 py-4 font-bold">₹{order.total_amount}</td>
                       <td className="px-6 py-4">
@@ -143,11 +162,69 @@ export default function AdminDashboard() {
                           {order.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{new Date(order.created_at || order.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Returns Tab */}
+        {activeTab === 'returns' && analytics && (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center">
+              <h1 className="text-3xl font-bold text-gray-900">Return Requests</h1>
+              <span className="bg-yellow-100 text-yellow-800 text-sm font-bold px-4 py-2 rounded-xl">
+                {analytics.returnRequests?.length || 0} Pending Requests
+              </span>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              {(!analytics.returnRequests || analytics.returnRequests.length === 0) ? (
+                <div className="p-12 text-center text-gray-500">
+                  No pending return requests found.
+                </div>
+              ) : (
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                    <tr>
+                      <th className="px-6 py-4">Order ID</th>
+                      <th className="px-6 py-4">Customer</th>
+                      <th className="px-6 py-4 w-1/3">Reason</th>
+                      <th className="px-6 py-4">Amount</th>
+                      <th className="px-6 py-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {analytics.returnRequests.map((req: any) => (
+                      <tr key={req.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 font-mono text-sm">#{req.id?.toString().slice(-8).toUpperCase()}</td>
+                        <td className="px-6 py-4 font-medium">{req.user_name}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600 italic">"{req.return_reason || req.returnReason}"</td>
+                        <td className="px-6 py-4 font-bold">₹{req.final_amount || req.finalAmount}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex space-x-2">
+                            <button 
+                              onClick={() => handleReturnStatus(req.id, 'approved')}
+                              className="px-4 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg text-sm font-bold transition-colors"
+                            >
+                              Approve
+                            </button>
+                            <button 
+                              onClick={() => handleReturnStatus(req.id, 'rejected')}
+                              className="px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-sm font-bold transition-colors"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}

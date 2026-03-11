@@ -96,7 +96,7 @@ function initLocalDb() {
     CREATE TABLE IF NOT EXISTS addresses (id INTEGER PRIMARY KEY, user_id INTEGER, full_name TEXT, phone TEXT, address_line TEXT, city TEXT, state TEXT, pincode TEXT, country TEXT, landmark TEXT, is_default INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS carts (id INTEGER PRIMARY KEY, user_id INTEGER UNIQUE, created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS cart_items (id INTEGER PRIMARY KEY, cart_id INTEGER, product_id INTEGER, variant_id INTEGER, quantity INTEGER, price REAL, size TEXT, color TEXT);
-    CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, order_number TEXT UNIQUE, user_id INTEGER, address_id INTEGER, total_amount REAL, discount_amount REAL, shipping_fee REAL, final_amount REAL, phone TEXT, address TEXT, payment_method TEXT, payment_status TEXT DEFAULT 'pending', status TEXT DEFAULT 'pending', tracking_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, order_number TEXT UNIQUE, user_id INTEGER, address_id INTEGER, total_amount REAL, discount_amount REAL, shipping_fee REAL, final_amount REAL, phone TEXT, address TEXT, payment_method TEXT, payment_status TEXT DEFAULT 'pending', status TEXT DEFAULT 'pending', return_status TEXT DEFAULT 'none', return_reason TEXT, tracking_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS order_items (id INTEGER PRIMARY KEY, order_id INTEGER, product_id INTEGER, name TEXT, quantity INTEGER, price REAL, size TEXT, color TEXT);
     CREATE TABLE IF NOT EXISTS payments (id INTEGER PRIMARY KEY, order_id INTEGER, payment_method TEXT, payment_gateway TEXT, transaction_id TEXT, amount REAL, status TEXT DEFAULT 'pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS shipments (id INTEGER PRIMARY KEY, order_id INTEGER, shipping_method_id INTEGER, tracking_number TEXT, shipment_status TEXT DEFAULT 'pending', shipped_at DATETIME, delivered_at DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
@@ -296,11 +296,13 @@ app.get("/api/admin/analytics", authenticate, isAdmin, async (req: Request, res:
       const orders = localDb.prepare("SELECT COUNT(*) as count, SUM(final_amount) as total FROM orders").get() as any;
       const users = localDb.prepare("SELECT COUNT(*) as count FROM users").get() as any;
       const recentOrders = localDb.prepare("SELECT o.id, o.final_amount as total_amount, o.status, o.created_at, u.name as user_name FROM orders o JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC LIMIT 5").all();
+      const returnRequests = localDb.prepare("SELECT o.*, u.name as user_name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.return_status = 'requested' ORDER BY o.created_at DESC").all();
       return res.json({ 
         orderCount: orders?.count || 0, 
         totalSales: orders?.total || 0, 
         userCount: users?.count || 0,
-        recentOrders: recentOrders || []
+        recentOrders: recentOrders || [],
+        returnRequests: returnRequests || []
       });
     }
 
@@ -316,8 +318,12 @@ app.get("/api/admin/analytics", authenticate, isAdmin, async (req: Request, res:
       status: o.status,
       created_at: o.createdAt
     }));
+    const returnDbRequests = await Order.find({ returnStatus: 'requested' }).populate("userId", "name").sort({ createdAt: -1 }).lean();
+    const returnRequests = returnDbRequests.map((o: any) => ({
+      ...o, id: o._id, user_name: o.userId?.name, return_status: o.returnStatus, return_reason: o.returnReason
+    }));
 
-    res.json({ orderCount, totalSales, userCount, recentOrders });
+    res.json({ orderCount, totalSales, userCount, recentOrders, returnRequests });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -405,6 +411,65 @@ app.post("/api/checkout", authenticate, async (req: Request, res: Response) => {
   }
 });
 
+// ─── Returns ───────────────────────────────────────────────────────────────────
+app.post("/api/orders/:id/return", authenticate, async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const orderId = req.params.id;
+  const { reason } = req.body;
+
+  try {
+    if (useLocalDb) {
+      // Basic check
+      const order = localDb.prepare("SELECT * FROM orders WHERE id = ? AND user_id = ?").get(orderId, userId) as any;
+      if (!order) return res.status(404).json({ error: "Order not found" });
+      if (order.status !== "delivered") return res.status(400).json({ error: "Only delivered orders can be returned" });
+      
+      localDb.prepare("UPDATE orders SET return_status = 'requested', return_reason = ? WHERE id = ?").run(reason, orderId);
+      return res.json({ success: true, returnStatus: 'requested' });
+    }
+
+    const order = await Order.findOne({ _id: orderId, userId });
+    if (!order) return res.status(404).json({ error: "Order not found" });
+    if (order.status !== "delivered") return res.status(400).json({ error: "Only delivered orders can be returned" });
+
+    order.returnStatus = 'requested';
+    order.returnReason = reason;
+    await order.save();
+    
+    res.json({ success: true, returnStatus: 'requested' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/admin/orders/:id/return-status", authenticate, isAdmin, async (req: Request, res: Response) => {
+  const orderId = req.params.id;
+  const { status } = req.body; // 'approved' or 'rejected'
+  
+  if (!['approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ error: "Invalid return status" });
+  }
+
+  try {
+    if (useLocalDb) {
+      localDb.prepare("UPDATE orders SET return_status = ? WHERE id = ?").run(status, orderId);
+      return res.json({ success: true, returnStatus: status });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    order.returnStatus = status;
+    await order.save();
+    
+    // In a real app, you would process refund logic here if approved
+    
+    res.json({ success: true, returnStatus: status });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get("/api/orders", authenticate, async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const role = (req as any).user.role;
@@ -416,10 +481,10 @@ app.get("/api/orders", authenticate, async (req: Request, res: Response) => {
   }
   if (role === "admin") {
     const orders = await Order.find().populate("userId", "name").sort({ createdAt: -1 }).lean();
-    res.json(orders.map((o: any) => ({ ...o, id: o._id, user_name: o.userId?.name })));
+    res.json(orders.map((o: any) => ({ ...o, id: o._id, user_name: o.userId?.name, return_status: o.returnStatus, return_reason: o.returnReason })));
   } else {
     const orders = await Order.find({ userId }).sort({ createdAt: -1 }).lean();
-    res.json(orders.map((o: any) => ({ ...o, id: o._id })));
+    res.json(orders.map((o: any) => ({ ...o, id: o._id, return_status: o.returnStatus, return_reason: o.returnReason })));
   }
 });
 
