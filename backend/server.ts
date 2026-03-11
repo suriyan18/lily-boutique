@@ -293,7 +293,7 @@ app.post("/api/products/:id/reviews", authenticate, async (req: Request, res: Re
 app.get("/api/admin/analytics", authenticate, isAdmin, async (req: Request, res: Response) => {
   try {
     if (useLocalDb) {
-      const orders = localDb.prepare("SELECT COUNT(*) as count, SUM(final_amount) as total FROM orders").get() as any;
+      const orders = localDb.prepare("SELECT COUNT(*) as count, SUM(final_amount) as total FROM orders WHERE return_status != 'approved' OR return_status IS NULL").get() as any;
       const users = localDb.prepare("SELECT COUNT(*) as count FROM users").get() as any;
       const recentOrders = localDb.prepare("SELECT o.id, o.final_amount as total_amount, o.status, o.created_at, u.name as user_name FROM orders o JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC LIMIT 5").all();
       const returnRequests = localDb.prepare("SELECT o.*, u.name as user_name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.return_status = 'requested' ORDER BY o.created_at DESC").all();
@@ -306,8 +306,12 @@ app.get("/api/admin/analytics", authenticate, isAdmin, async (req: Request, res:
       });
     }
 
-    const orderCount = await Order.countDocuments();
-    const revenueStats = await Order.aggregate([{ $group: { _id: null, total: { $sum: "$finalAmount" } } }]);
+    const validOrderQuery = { returnStatus: { $ne: 'approved' } };
+    const orderCount = await Order.countDocuments(validOrderQuery);
+    const revenueStats = await Order.aggregate([
+      { $match: validOrderQuery },
+      { $group: { _id: null, total: { $sum: "$finalAmount" } } }
+    ]);
     const totalSales = revenueStats[0]?.total || 0;
     const userCount = await User.countDocuments();
     const recentDbOrders = await Order.find().populate("userId", "name").sort({ createdAt: -1 }).limit(5).lean();
