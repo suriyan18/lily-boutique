@@ -226,7 +226,7 @@ app.post("/api/auth/send-otp", (req: Request, res: Response) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore.set(phone, otp);
   console.log(`[Lily Boutique] OTP for ${phone}: ${otp}`); // Simulated SMS
-  res.json({ success: true, message: "OTP sent successfully" });
+  res.json({ success: true, message: "OTP sent successfully", mockOtp: otp });
 });
 
 app.post("/api/auth/verify-otp", (req: Request, res: Response) => {

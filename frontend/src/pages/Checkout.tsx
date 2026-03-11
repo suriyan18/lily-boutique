@@ -72,12 +72,12 @@ export default function Checkout() {
     if (!phone || phone.length < 10) return toast.error("Please enter a valid phone number");
     setIsProcessing(true);
     try {
-      await apiFetch('/api/auth/send-otp', {
+      const res = await apiFetch('/api/auth/send-otp', {
         method: 'POST',
         body: JSON.stringify({ phone })
       });
       setOtpSent(true);
-      toast.success("OTP sent to your phone!");
+      toast.success(`Demo OTP: ${res.mockOtp}`, { duration: 8000 });
     } catch (err) {
       toast.error("Failed to send OTP");
     } finally {
