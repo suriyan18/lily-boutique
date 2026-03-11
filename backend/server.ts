@@ -289,7 +289,40 @@ app.post("/api/products/:id/reviews", authenticate, async (req: Request, res: Re
   res.json({ success: true });
 });
 
-// ─── Admin Products ───────────────────────────────────────────────────────────
+// ─── Products Management ──────────────────────────────────────────────────────
+app.get("/api/admin/analytics", authenticate, isAdmin, async (req: Request, res: Response) => {
+  try {
+    if (useLocalDb) {
+      const orders = localDb.prepare("SELECT COUNT(*) as count, SUM(final_amount) as total FROM orders").get() as any;
+      const users = localDb.prepare("SELECT COUNT(*) as count FROM users").get() as any;
+      const recentOrders = localDb.prepare("SELECT o.id, o.final_amount as total_amount, o.status, o.created_at, u.name as user_name FROM orders o JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC LIMIT 5").all();
+      return res.json({ 
+        orderCount: orders?.count || 0, 
+        totalSales: orders?.total || 0, 
+        userCount: users?.count || 0,
+        recentOrders: recentOrders || []
+      });
+    }
+
+    const orderCount = await Order.countDocuments();
+    const revenueStats = await Order.aggregate([{ $group: { _id: null, total: { $sum: "$finalAmount" } } }]);
+    const totalSales = revenueStats[0]?.total || 0;
+    const userCount = await User.countDocuments();
+    const recentDbOrders = await Order.find().populate("userId", "name").sort({ createdAt: -1 }).limit(5).lean();
+    const recentOrders = recentDbOrders.map((o: any) => ({
+      id: o._id,
+      user_name: o.userId?.name || "Unknown",
+      total_amount: o.finalAmount,
+      status: o.status,
+      created_at: o.createdAt
+    }));
+
+    res.json({ orderCount, totalSales, userCount, recentOrders });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post("/api/admin/products", authenticate, isAdmin, async (req: Request, res: Response) => {
   const { name, description, price, category_id, image_url, stock, is_featured } = req.body;
   if (useLocalDb) {
