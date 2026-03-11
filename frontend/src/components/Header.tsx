@@ -32,7 +32,7 @@ export default function Header() {
                     <span className="font-display text-xs sm:text-lg font-extrabold text-gray-800 tracking-widest uppercase">boutique</span>
                   </div>
                   <span
-                    className="hidden sm:block font-logo text-[13px] tracking-wide mt-0.5 transition-all duration-300 group-hover:tracking-widest"
+                    className="font-logo text-[10px] sm:text-[13px] tracking-wide mt-0.5 transition-all duration-300 group-hover:tracking-widest"
                     style={{ background: 'linear-gradient(90deg, #a855f7, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                   >✦ Style With Smile...</span>
                 </div>
