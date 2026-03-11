@@ -17,6 +17,17 @@ import StyleFinder from './pages/StyleFinder';
 import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 
+import { useAuth } from './context/AuthContext';
+import { Navigate } from 'react-router-dom';
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+}
+
 function AppContent() {
   return (
     <div className="min-h-screen flex flex-col font-body text-gray-900">
@@ -29,7 +40,7 @@ function AppContent() {
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/style-finder" element={<StyleFinder />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/orders" element={<Orders />} />
