@@ -22,6 +22,7 @@ export default function Checkout() {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [isOtpVerified, setIsOtpVerified] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   
   const [address, setAddress] = useState({ 
     fullName: '',
@@ -38,6 +39,14 @@ export default function Checkout() {
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [useSavedAddress, setUseSavedAddress] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   useEffect(() => {
     if (!user) {
@@ -77,6 +86,7 @@ export default function Checkout() {
         body: JSON.stringify({ phone })
       });
       setOtpSent(true);
+      setResendCooldown(30);
       toast.success(`Demo OTP: ${res.mockOtp}`, { duration: 8000 });
     } catch (err) {
       toast.error("Failed to send OTP");
@@ -235,7 +245,18 @@ export default function Checkout() {
                         </>
                       )}
                     </button>
-                    {otpSent && <button onClick={() => setOtpSent(false)} className="w-full text-brand-600 font-bold text-sm">Change Number</button>}
+                    {otpSent && (
+                      <div className="flex justify-between items-center w-full mt-4">
+                        <button onClick={() => setOtpSent(false)} className="text-brand-600 font-bold text-sm hover:underline">Change Number</button>
+                        <button 
+                          onClick={handleSendOTP} 
+                          disabled={resendCooldown > 0 || isProcessing} 
+                          className="text-brand-600 font-bold text-sm disabled:text-gray-400 disabled:cursor-not-allowed hover:underline"
+                        >
+                          {resendCooldown > 0 ? `Resend OTP in ${resendCooldown}s` : 'Resend OTP'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
